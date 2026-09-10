@@ -1,1 +1,1606 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean Techno Dashboard & Order Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
+    <!-- Firebase SDK Modular -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVFrPTF3FJpaMuSEVPVhTdi2gWaqRmIb0",
+            authDomain: "jpstenly-319ed.firebaseapp.com",
+            databaseURL: "https://jpstenly-319ed-default-rtdb.firebaseio.com",
+            projectId: "jpstenly-319ed",
+            storageBucket: "jpstenly-319ed.firebasestorage.app",
+            messagingSenderId: "529272938229",
+            appId: "1:529272938229:web:6988b484c127fc7b446fbc",
+            measurementId: "G-D4CHLL4YY5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.db = db;
+        window.dbRef = { ref, set, onValue };
+        
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-grid: #111111;
+            --bg-surface: #141414;
+            --bg-surface-hover: #222222;
+            --border-color: #2a2a2a;
+            --border-light: #383838;
+            --accent-blue: #ffffff;
+            --accent-glow: rgba(255, 255, 255, 0.1);
+            --text-main: #f3f4f6;
+            --text-muted: #888888;
+            --tab-bg: #141414;
+            --tab-active: #000000;
+            --font-mono: 'JetBrains Mono', Consolas, monospace;
+            --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .navbar {
+            display: flex;
+            background: #050505;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 16px;
+            gap: 4px;
+            z-index: 100;
+            overflow-x: auto;
+        }
+
+        .nav-btn {
+            padding: 12px 16px;
+            background: #141414;
+            border: none;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .nav-btn:hover {
+            background: #222222;
+            color: var(--text-main);
+        }
+
+        .nav-btn.active {
+            background: var(--bg-main);
+            color: #ffffff;
+            border-top: 3px solid #ffffff;
+            box-shadow: 0 -2px 6px rgba(0,0,0,0.5);
+        }
+
+        .page-content {
+            flex: 1;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .page-content.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .work-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 100%;
+            width: 100%;
+            padding-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .bottom-panel {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .paste-zone {
+            width: 280px;
+            height: 65px;
+            border: 2px dashed var(--border-color);
+            background: var(--bg-surface);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            cursor: pointer;
+            outline: none;
+        }
+
+        .paste-zone h3 {
+            margin: 0 0 2px 0;
+            color: var(--text-main);
+            font-size: 12px;
+            font-family: var(--font-mono);
+        }
+
+        .paste-zone p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-family: var(--font-mono);
+        }
+
+        .add-btn {
+            width: 45px;
+            height: 65px;
+            background: var(--bg-surface);
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .sticky-note-harga {
+            position: absolute;
+            width: 270px;
+            background: #141414;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+            font-family: var(--font-sans);
+            z-index: 9999;
+            overflow: hidden;
+            transition: width 0.25s ease, height 0.25s ease;
+            color: var(--text-main);
+        }
+
+        .sticky-note-harga.collapsed {
+            width: 180px;
+            height: 26px;
+            cursor: pointer;
+        }
+
+        .sticky-note-harga.collapsed .sticky-body {
+            display: none;
+        }
+
+        .sticky-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-light);
+            padding: 6px 10px;
+            background: inherit;
+            font-weight: 600;
+            color: var(--text-main);
+            font-size: 11px;
+            font-family: var(--font-mono);
+            cursor: move;
+            user-select: none;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 0;
+        }
+
+        .sticky-body {
+            padding: 10px;
+            background: inherit;
+        }
+
+        .sticky-color-picker {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 10px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+        }
+
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: inline-block;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .dot-white { background: #222222; }
+        .dot-red { background: #450a0a; }
+        .dot-blue { background: #172554; }
+        .dot-green { background: #022c22; }
+
+        .note-field {
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: var(--text-main);
+        }
+
+        .note-field label {
+            display: block;
+            font-weight: 600;
+            font-size: 9px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+        }
+
+        .note-field .value-box, .note-field textarea {
+            background: #000000;
+            padding: 5px 7px;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+            color: var(--text-main);
+            width: 100%;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 11px;
+            font-family: inherit;
+        }
+
+        .calendar-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 550px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+            box-sizing: border-box;
+        }
+
+        .search-container {
+            background: #000000;
+            border: 1px solid var(--border-light);
+            padding: 10px 14px;
+            border-radius: 6px;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            box-sizing: border-box;
+            outline: none;
+            background: #141414;
+            color: var(--text-main);
+        }
+
+        .search-results {
+            max-height: 80px;
+            overflow-y: auto;
+            margin-top: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .search-result-item {
+            padding: 4px 6px;
+            background: #141414;
+            border: 1px solid var(--border-light);
+            border-radius: 3px;
+            margin-bottom: 3px;
+            cursor: pointer;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            text-align: center;
+        }
+
+        .cal-day-name {
+            font-size: 10px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .cal-cell {
+            width: 100%;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #000000;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .cal-cell.selected {
+            background: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+            font-weight: bold;
+        }
+
+        .cal-cell.has-memo::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            width: 4px;
+            height: 4px;
+            background: #ffffff;
+            border-radius: 50%;
+        }
+
+        .memo-box-container textarea {
+            width: 100%;
+            height: 80px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px;
+            font-family: inherit;
+            font-size: 12px;
+            resize: none;
+            box-sizing: border-box;
+            background: #000000;
+            color: var(--text-main);
+        }
+
+        .order-page-wrapper {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 950px;
+            height: 100%;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .order-filter-bar {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .filter-group label {
+            font-size: 9px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .filter-group input, .filter-group select {
+            padding: 5px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: inherit;
+            outline: none;
+            background: #000000;
+            color: var(--text-main);
+        }
+
+        .order-list-container {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-bottom: 80px;
+        }
+
+        .order-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid #ffffff;
+            border-radius: 6px;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .order-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 4px;
+        }
+
+        .order-main-info {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .order-card-body {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .order-field-item span {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 9px;
+            display: block;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+        }
+
+        .order-delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .order-bottom-bar {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(2px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .order-form-modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 480px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+            max-height: 90vh;
+            overflow-y: auto;
+            color: var(--text-main);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .form-group label {
+            font-size: 9px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            padding: 5px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: inherit;
+            outline: none;
+            background: #000000;
+            color: var(--text-main);
+        }
+
+        .date-select-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .date-select-group select {
+            flex: 1;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-cancel, .btn-confirm {
+            border: none;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-cancel { background: #222222; color: #d1d5db; }
+        .btn-confirm { background: #ffffff; color: #000000; font-weight: bold; }
+
+        .detail-row {
+            display: flex;
+            flex-direction: column;
+            background: #000000;
+            border: 1px solid var(--border-light);
+            padding: 6px 8px;
+            border-radius: 4px;
+            gap: 2px;
+        }
+
+        .detail-row span.label {
+            font-size: 9px;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .detail-row .value-editable {
+            font-size: 11px;
+            color: var(--text-main);
+            background: #141414;
+            border: 1px solid var(--border-light);
+            padding: 3px 5px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .jump-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 0 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <button class="nav-btn active" onclick="switchPage('notes')">// NOTES</button>
+        <button class="nav-btn" onclick="switchPage('cylinder')">// CYLINDER</button>
+        <button class="nav-btn" onclick="switchPage('orderan')">// ORDERAN_MASUK</button>
+        <button class="nav-btn" onclick="switchPage('orderan-keluar')">// ORDERAN_SELESAI</button>
+        <button class="nav-btn" onclick="switchPage('kalender')">// KALENDER</button>
+        <button class="nav-btn" onclick="switchPage('import-export')">// IMPORT_EXPORT</button>
+    </div>
+
+    <!-- NOTES -->
+    <div id="page-notes" class="page-content active">
+        <div class="work-container">
+            <div class="bottom-panel">
+                <div id="pasteZoneNotes" class="paste-zone" tabindex="0">
+                    <h3>📋 PASTE BUFFER</h3>
+                    <p>Ctrl + V (Teks / Gambar OCR)</p>
+                    <span id="zoneStatusNotes" style="font-size: 9px; color: #ffffff; font-family: var(--font-mono); font-weight: 500; margin-top: 2px;"></span>
+                </div>
+                <div class="add-btn" onclick="createNewNotesSticky('-')" title="Tambah Sticky Note Kosong">＋</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CYLINDER -->
+    <div id="page-cylinder" class="page-content">
+        <div class="order-page-wrapper">
+            <div class="order-filter-bar">
+                <div class="filter-group"><label>Filter Tanggal</label><select id="filterCylTanggal" onchange="renderCylinders()"><option value="">Semua Tgl</option></select></div>
+                <div class="filter-group"><label>Filter Bulan</label><select id="filterCylBulan" onchange="renderCylinders()"><option value="">Semua Bulan</option><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
+                <div class="filter-group"><label>Filter Tahun</label><select id="filterCylTahun" onchange="renderCylinders()"><option value="">Semua Thn</option></select></div>
+                <div class="filter-group"><label>Cari Customer</label><input type="text" id="filterCylCustomer" placeholder="Ketik cust..." oninput="renderCylinders()"></div>
+                <div class="filter-group"><label>Cari Nama Job</label><input type="text" id="filterCylNamaJob" placeholder="Ketik job..." oninput="renderCylinders()"></div>
+            </div>
+            <div id="cylinderListContainer" class="order-list-container">
+                <div style="text-align: center; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); padding: 30px;">Belum ada data cylinder.</div>
+            </div>
+            <div class="order-bottom-bar">
+                <div class="add-btn" onclick="openCylModal()">＋</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDERAN MASUK -->
+    <div id="page-orderan" class="page-content">
+        <div class="order-page-wrapper">
+            <div class="order-filter-bar">
+                <div class="filter-group"><label>Filter Tanggal</label><select id="filterTanggal" onchange="renderOrders()"><option value="">Semua Tgl</option></select></div>
+                <div class="filter-group"><label>Filter Bulan</label><select id="filterBulan" onchange="renderOrders()"><option value="">Semua Bulan</option><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
+                <div class="filter-group"><label>Filter Tahun</label><select id="filterTahun" onchange="renderOrders()"><option value="">Semua Thn</option></select></div>
+                <div class="filter-group"><label>Cari Customer</label><input type="text" id="filterCustomer" placeholder="Ketik cust..." oninput="renderOrders()"></div>
+                <div class="filter-group"><label>Cari Nama Job</label><input type="text" id="filterNamaJob" placeholder="Ketik job..." oninput="renderOrders()"></div>
+            </div>
+            <div id="orderListContainer" class="order-list-container">
+                <div style="text-align: center; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); padding: 30px;">Belum ada orderan masuk.</div>
+            </div>
+            <div class="order-bottom-bar">
+                <div class="add-btn" onclick="openOrderModal()">＋</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDERAN SELESAI -->
+    <div id="page-orderan-keluar" class="page-content">
+        <div class="order-page-wrapper">
+            <div class="order-filter-bar">
+                <div class="filter-group"><label>Filter Tanggal</label><select id="filterOutTanggal" onchange="renderCompletedOrders()"><option value="">Semua Tgl</option></select></div>
+                <div class="filter-group"><label>Filter Bulan</label><select id="filterOutBulan" onchange="renderCompletedOrders()"><option value="">Semua Bulan</option><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
+                <div class="filter-group"><label>Filter Tahun</label><select id="filterOutTahun" onchange="renderCompletedOrders()"><option value="">Semua Thn</option></select></div>
+                <div class="filter-group"><label>Cari Customer</label><input type="text" id="filterOutCustomer" placeholder="Ketik cust..." oninput="renderCompletedOrders()"></div>
+                <div class="filter-group"><label>Cari Nama Job</label><input type="text" id="filterOutNamaJob" placeholder="Ketik job..." oninput="renderCompletedOrders()"></div>
+            </div>
+            <div id="completedOrderListContainer" class="order-list-container">
+                <div style="text-align: center; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); padding: 30px;">Belum ada orderan selesai.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KALENDER -->
+    <div id="page-kalender" class="page-content">
+        <div class="calendar-wrapper">
+            <div class="search-container">
+                <div style="font-size: 11px; font-family: var(--font-mono); font-weight: 600; margin-bottom: 4px; color: var(--text-main);">🔍 Cari Tulisan di Memo</div>
+                <input type="text" id="memoSearchInput" placeholder="Ketik kata kunci..." oninput="searchMemos()">
+                <div id="memoSearchResults" class="search-results"></div>
+            </div>
+            <div class="calendar-main">
+                <div class="calendar-header-nav" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-weight:bold;">
+                    <button onclick="changeMonth(-1)" style="background:#141414; color:white; border:1px solid var(--border-light); padding:4px 10px; cursor:pointer; border-radius:4px;">&lsaquo;</button>
+                    <span id="calendarMonthYear" style="color:var(--text-main);">Bulan Tahun</span>
+                    <button onclick="changeMonth(1)" style="background:#141414; color:white; border:1px solid var(--border-light); padding:4px 10px; cursor:pointer; border-radius:4px;">&rsaquo;</button>
+                </div>
+                <div class="calendar-grid">
+                    <div class="cal-day-name">Min</div><div class="cal-day-name">Sen</div><div class="cal-day-name">Sel</div><div class="cal-day-name">Rab</div><div class="cal-day-name">Kam</div><div class="cal-day-name">Jum</div><div class="cal-day-name">Sab</div>
+                </div>
+                <div id="calendarDaysGrid" class="calendar-grid" style="margin-top: 6px;"></div>
+            </div>
+            <div class="memo-box-container">
+                <div style="font-size: 12px; font-family: var(--font-mono); font-weight: 600; margin-bottom: 6px; color: var(--text-main);" id="selectedDateTitle">Pilih Tanggal</div>
+                <textarea id="calendarMemoText" placeholder="Ketik memo..." oninput="saveCurrentMemo()"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORT & EXPORT TAB -->
+    <div id="page-import-export" class="page-content">
+        <div class="calendar-wrapper" style="max-width: 500px; gap: 20px;">
+            <h3 style="margin-top: 0; font-family: var(--font-mono); font-size: 14px; color: var(--text-main);">💾 Backup & Restore Data Database</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-size: 11px; font-weight: 600; font-family: var(--font-mono); color: var(--text-muted);">EXPORT DATA (Unduh Cadangan)</label>
+                <p style="font-size: 11px; margin: 0; color: var(--text-muted);">Unduh seluruh data (Notes, Cylinder, Orderan Masuk/Selesai, dan Kalender) ke dalam file berformat JSON.</p>
+                <button class="btn-confirm" style="padding: 10px; width: 100%; cursor: pointer;" onclick="exportDatabaseJSON()">⬇️ Download File JSON</button>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid var(--border-light); width: 100%;">
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-size: 11px; font-weight: 600; font-family: var(--font-mono); color: var(--text-muted);">IMPORT DATA (Pulihkan dari File)</label>
+                <p style="font-size: 11px; margin: 0; color: var(--text-muted);">Pilih file JSON cadangan sebelumnya untuk memperbarui data ke Firebase.</p>
+                <input type="file" id="importFileJSON" accept=".json" style="font-size: 11px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: #000000; color: var(--text-main);">
+                <button class="btn-cancel" style="padding: 10px; width: 100%; background: #450a0a; color: #fca5a5; font-weight: bold; cursor: pointer;" onclick="importDatabaseJSON()">⬆️ Upload & Timpa Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CYLINDER -->
+    <div id="cylModal" class="modal-overlay">
+        <div class="order-form-modal">
+            <h3>⚙️ Input Data Cylinder</h3>
+            <div class="form-group"><label>Tanggal Order</label><div class="date-select-group"><select id="cylSelectTanggal"></select><select id="cylSelectBulan"><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select><select id="cylSelectTahun"></select></div></div>
+            <div class="form-group"><label>No SO</label><input type="text" id="cylNoSO"></div>
+            <div class="form-group"><label>Nama Customer</label><input type="text" id="cylCustomer"></div>
+            <div class="form-group"><label>Nama Job</label><input type="text" id="cylNamaJob"></div>
+            <div style="display: flex; gap: 8px;"><div class="form-group" style="flex:1;"><label>Panjang Cyl</label><input type="text" id="cylPanjang"></div><div class="form-group" style="flex:1;"><label>Cirkum Cyl</label><input type="text" id="cylCirkum"></div></div>
+            <div style="display: flex; gap: 8px;"><div class="form-group" style="flex:1;"><label>Up</label><input type="text" id="cylUp"></div><div class="form-group" style="flex:1;"><label>Pitch</label><input type="text" id="cylPitch"></div></div>
+            <div style="display: flex; gap: 8px;"><div class="form-group" style="flex:1;"><label>Newbase Qty</label><input type="text" id="cylNewbase"></div><div class="form-group" style="flex:1;"><label>Oldbase Qty</label><input type="text" id="cylOldbase"></div></div>
+            <div style="display: flex; gap: 8px;"><div class="form-group" style="flex:1;"><label>Cetakan</label><select id="cylCetakan"><option value="Top Print">Top Print</option><option value="Reverse Print">Reverse Print</option></select></div><div class="form-group" style="flex:1;"><label>Cones</label><input type="text" id="cylCones"></div></div>
+            <div class="form-group"><label>Catatan</label><textarea id="cylCatatan" style="height: 35px; resize: none;"></textarea></div>
+            <div class="modal-actions"><button class="btn-cancel" onclick="closeCylModal()">Batal</button><button class="btn-confirm" onclick="confirmCylinder()">Konfirmasi</button></div>
+        </div>
+    </div>
+
+    <!-- MODAL ORDERAN BARU -->
+    <div id="orderModal" class="modal-overlay">
+        <div class="order-form-modal">
+            <h3>📝 Input Orderan Baru</h3>
+            <div class="form-group"><label>No PO</label><input type="text" id="inputNoPO"></div>
+            <div class="form-group"><label>No SO</label><input type="text" id="inputNoSO"></div>
+            <div class="form-group"><label>Tanggal Order</label><div class="date-select-group"><select id="selectTanggal"></select><select id="selectBulan"><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select><select id="selectTahun"></select></div></div>
+            <div class="form-group"><label>Customer</label><input type="text" id="inputCustomer"></div>
+            <div class="form-group"><label>Nama Job</label><input type="text" id="inputNamaJob"></div>
+            <div class="form-group"><label>Ukuran</label><input type="text" id="inputUkuran"></div>
+            <div class="form-group"><label>Link Job</label><input type="text" id="inputLinkJob"></div>
+            <div class="form-group"><label>Catatan</label><textarea id="inputCatatan" style="height: 35px; resize: none;"></textarea></div>
+            <div class="modal-actions"><button class="btn-cancel" onclick="closeOrderModal()">Batal</button><button class="btn-confirm" onclick="confirmOrder()">Konfirmasi</button></div>
+        </div>
+    </div>
+
+    <!-- DETAIL CYLINDER -->
+    <div id="cylDetailModal" class="modal-overlay">
+        <div class="order-form-modal">
+            <h3>🔍 Detail Cylinder <button class="jump-btn" id="cylJumpToOrder" title="Cari Nama Job di Orderan Masuk">*</button></h3>
+            <div class="detail-row"><span class="label">Tanggal (DD-MM-YYYY)</span><div class="value-editable" id="detCylTanggal" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">No SO</span><div class="value-editable" id="detCylSO" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">Customer</span><div class="value-editable" id="detCylCustomer" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">Nama Job</span><div class="value-editable" id="detCylNamaJob" contenteditable="true">-</div></div>
+            <div style="display:flex; gap:6px;"><div class="detail-row" style="flex:1;"><span class="label">Panjang</span><div class="value-editable" id="detCylPanjang" contenteditable="true">-</div></div><div class="detail-row" style="flex:1;"><span class="label">Cirkum</span><div class="value-editable" id="detCylCirkum" contenteditable="true">-</div></div></div>
+            <div style="display:flex; gap:6px;"><div class="detail-row" style="flex:1;"><span class="label">Up</span><div class="value-editable" id="detCylUp" contenteditable="true">-</div></div><div class="detail-row" style="flex:1;"><span class="label">Pitch</span><div class="value-editable" id="detCylPitch" contenteditable="true">-</div></div></div>
+            <div style="display:flex; gap:6px;"><div class="detail-row" style="flex:1;"><span class="label">Newbase Qty</span><div class="value-editable" id="detCylNewbase" contenteditable="true">-</div></div><div class="detail-row" style="flex:1;"><span class="label">Oldbase Qty</span><div class="value-editable" id="detCylOldbase" contenteditable="true">-</div></div></div>
+            <div style="display:flex; gap:6px;"><div class="detail-row" style="flex:1;"><span class="label">Cetakan</span><div class="value-editable" id="detCylCetakan" contenteditable="true">-</div></div><div class="detail-row" style="flex:1;"><span class="label">Cones</span><div class="value-editable" id="detCylCones" contenteditable="true">-</div></div></div>
+            <div class="detail-row"><span class="label">Catatan</span><textarea class="value-editable" id="detCylCatatan" style="width:100%; min-height:35px; resize:vertical; font-family:inherit; background:#141414; color:white;">-</textarea></div>
+            <div class="modal-actions" style="justify-content: space-between; align-items: center;">
+                <button class="btn-cancel" style="background: #450a0a; color: #fca5a5;" id="detCylDeleteBtn">Hapus Data</button>
+                <div style="display: flex; gap: 4px;"><button class="btn-cancel" onclick="closeCylDetailModal()">Batal</button><button class="btn-confirm" id="detCylSaveBtn">Simpan</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAIL ORDERAN -->
+    <div id="orderDetailModal" class="modal-overlay">
+        <div class="order-form-modal">
+            <h3>🔍 Detail & Edit Orderan <button class="jump-btn" id="orderJumpToCyl" title="Cari Nama Job di Cylinder">*</button></h3>
+            <div class="detail-row"><span class="label">No PO</span><div class="value-editable" id="detailPO" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">No SO</span><div class="value-editable" id="detailSO" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">Tanggal Order (DD-MM-YYYY)</span><div class="value-editable" id="detailTanggal" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">Customer</span><div class="value-editable" id="detailCustomer" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">Nama Job</span><div class="value-editable" id="detailNamaJob" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">Ukuran</span><div class="value-editable" id="detailUkuran" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">Link Job</span><div class="value-editable" id="detailLinkJob" contenteditable="true">-</div></div>
+            <div class="detail-row"><span class="label">Catatan</span><textarea class="value-editable" id="detailCatatan" style="width:100%; min-height:35px; resize:vertical; font-family:inherit; background:#141414; color:white;">-</textarea></div>
+            <div class="modal-actions" style="justify-content: space-between; align-items: center;">
+                <button class="btn-cancel" style="background: #450a0a; color: #fca5a5;" id="detailDeleteBtn">Hapus Order</button>
+                <div style="display: flex; gap: 4px;"><button class="btn-cancel" style="background: #022c22; color: #34d399;" id="detailCompleteBtn">✓ Selesai</button><button class="btn-cancel" onclick="closeDetailModal()">Batal</button><button class="btn-confirm" id="detailSaveBtn">Simpan</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let incomingOrdersData = [];
+        let completedOrdersData = [];
+        let cylinderDataList = [];
+        let calendarMemosData = {};
+        let notesDataList = [];
+
+        window.addEventListener('firebase-ready', () => {
+            initFirebaseRealtimeSync();
+        });
+
+        function initFirebaseRealtimeSync() {
+            if (!window.db) return;
+            const { ref, onValue } = window.dbRef;
+
+            onValue(ref(window.db, 'notes_page'), (snapshot) => {
+                const data = snapshot.val();
+                notesDataList = data ? Object.values(data) : [];
+                document.querySelectorAll('#page-notes .sticky-note-harga').forEach(el => el.remove());
+                notesDataList.forEach(item => {
+                    if (item) createNewNotesSticky(item.itemName, item.contactText, item.noteText, parseFloat(item.left), parseFloat(item.top), item.bgColor, false);
+                });
+            });
+
+            onValue(ref(window.db, 'cylinder_data'), (snapshot) => {
+                const data = snapshot.val();
+                cylinderDataList = data ? Object.values(data) : [];
+                if (document.getElementById('page-cylinder').classList.contains('active')) renderCylinders();
+            });
+
+            onValue(ref(window.db, 'incoming_orders'), (snapshot) => {
+                const data = snapshot.val();
+                incomingOrdersData = data ? Object.values(data) : [];
+                if (document.getElementById('page-orderan').classList.contains('active')) renderOrders();
+            });
+
+            onValue(ref(window.db, 'completed_orders'), (snapshot) => {
+                const data = snapshot.val();
+                completedOrdersData = data ? Object.values(data) : [];
+                if (document.getElementById('page-orderan-keluar').classList.contains('active')) renderCompletedOrders();
+            });
+
+            onValue(ref(window.db, 'calendar_memos'), (snapshot) => {
+                const data = snapshot.val();
+                calendarMemosData = data || {};
+                if (document.getElementById('page-kalender').classList.contains('active')) renderCalendar();
+            });
+        }
+
+        function saveToFirebase(path, data) {
+            if (!window.db) return;
+            const { ref, set } = window.dbRef;
+            set(ref(window.db, path), data);
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if (btn.getAttribute('onclick').includes(pageId)) btn.classList.add('active');
+            });
+
+            if (pageId === 'notes') document.getElementById('pasteZoneNotes').focus();
+            else if (pageId === 'cylinder') { initCylFilterDropdowns(); renderCylinders(); }
+            else if (pageId === 'kalender') renderCalendar();
+            else if (pageId === 'orderan') { initFilterDropdowns(); renderOrders(); }
+            else if (pageId === 'orderan-keluar') { initFilterDropdowns(); renderCompletedOrders(); }
+        }
+
+        const pasteZoneNotes = document.getElementById('pasteZoneNotes');
+        const zoneStatusNotes = document.getElementById('zoneStatusNotes');
+        let noteCounter = 0;
+        pasteZoneNotes.focus();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCalendar();
+            initDateDropdowns();
+            initCylDateDropdowns();
+            initFilterDropdowns();
+            initCylFilterDropdowns();
+            resetFilterToToday();
+            resetFilterToTodayCompleted();
+            resetCylFilterToToday();
+        });
+
+        // ==================== STICKY NOTES ====================
+        function createNewNotesSticky(itemName = "-", contactText = "", noteText = "", customX = null, customY = null, customColor = "", saveToCloud = true) {
+            noteCounter++;
+            const id = 'notes_note_' + noteCounter + '_' + Date.now();
+            const randomX = customX !== null ? customX : (window.innerWidth / 2 - 135 + (noteCounter * 15 % 150));
+            const randomY = customY !== null ? customY : (window.innerHeight / 2 - 150 + (noteCounter * 15 % 100));
+
+            const noteDiv = document.createElement('div');
+            noteDiv.className = 'sticky-note-harga collapsed';
+            noteDiv.id = id;
+            noteDiv.style.left = `${randomX}px`;
+            noteDiv.style.top = `${randomY}px`;
+            if (customColor) noteDiv.style.backgroundColor = customColor;
+
+            noteDiv.innerHTML = `
+                <div class="sticky-header" id="header_${id}">
+                    <span class="item-title" id="title_${id}">${itemName}</span>
+                    <button class="close-btn" onclick="closeNote(event, '${id}')">&times;</button>
+                </div>
+                <div class="sticky-body">
+                    <div class="sticky-color-picker">
+                        <span>Warna:</span>
+                        <span class="color-dot dot-white" onclick="setStickyColor('${id}', '#141414')"></span>
+                        <span class="color-dot dot-red" onclick="setStickyColor('${id}', '#450a0a')"></span>
+                        <span class="color-dot dot-blue" onclick="setStickyColor('${id}', '#172554')"></span>
+                        <span class="color-dot dot-green" onclick="setStickyColor('${id}', '#022c22')"></span>
+                    </div>
+                    <div class="note-field"><label>Nama Item:</label><div class="value-box" id="item_${id}" contenteditable="true">${itemName}</div></div>
+                    <div class="note-field"><label>Kontak:</label><div class="value-box" id="contact_${id}" contenteditable="true">${contactText}</div></div>
+                    <div class="note-field"><label>Catatan:</label><textarea id="noteText_${id}">${noteText}</textarea></div>
+                </div>
+            `;
+
+            document.getElementById('page-notes').appendChild(noteDiv);
+            setupDraggableAndEventsNotes(noteDiv, id);
+            if (saveToCloud) syncNotesToCloud();
+            return noteDiv;
+        }
+
+        function setStickyColor(id, hexColor) {
+            const noteDiv = document.getElementById(id);
+            if (!noteDiv) return;
+            noteDiv.style.backgroundColor = (hexColor === '#141414' || noteDiv.style.backgroundColor === hexColor) ? '' : hexColor;
+            syncNotesToCloud();
+        }
+
+        function setupDraggableAndEventsNotes(noteDiv, id) {
+            const header = document.getElementById(`header_${id}`);
+            let isDragging = false, offsetX, offsetY;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - noteDiv.getBoundingClientRect().left;
+                offsetY = e.clientY - noteDiv.getBoundingClientRect().top;
+                e.stopPropagation();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const parentRect = document.getElementById('page-notes').getBoundingClientRect();
+                noteDiv.style.left = `${e.clientX - parentRect.left - offsetX}px`;
+                noteDiv.style.top = `${e.clientY - parentRect.top - offsetY}px`;
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) { isDragging = false; syncNotesToCloud(); }
+            });
+
+            const itemBox = document.getElementById(`item_${id}`);
+            const contactBox = document.getElementById(`contact_${id}`);
+            const noteTextArea = document.getElementById(`noteText_${id}`);
+            const titleSpan = document.getElementById(`title_${id}`);
+
+            itemBox.addEventListener('input', () => { titleSpan.innerText = itemBox.innerText || "-"; syncNotesToCloud(); });
+            contactBox.addEventListener('input', () => syncNotesToCloud());
+            noteTextArea.addEventListener('input', () => syncNotesToCloud());
+
+            noteDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('close-btn') || e.target.classList.contains('color-dot')) return;
+                if (noteDiv.classList.contains('collapsed')) noteDiv.classList.remove('collapsed');
+            });
+        }
+
+        function closeNote(e, id) {
+            e.stopPropagation();
+            const note = document.getElementById(id);
+            if (note) note.remove();
+            syncNotesToCloud();
+        }
+
+        function syncNotesToCloud() {
+            const notesList = document.querySelectorAll('#page-notes .sticky-note-harga');
+            const notesData = [];
+            notesList.forEach(note => {
+                const id = note.id;
+                notesData.push({
+                    itemName: document.getElementById(`item_${id}`)?.innerText || "-",
+                    contactText: document.getElementById(`contact_${id}`)?.innerText || "-",
+                    noteText: document.getElementById(`noteText_${id}`)?.value || "",
+                    left: note.style.left,
+                    top: note.style.top,
+                    bgColor: note.style.backgroundColor || ""
+                });
+            });
+            saveToFirebase('notes_page', notesData);
+        }
+
+        // ==================== CYLINDER ====================
+        function initCylDateDropdowns() {
+            const now = new Date();
+            const selTgl = document.getElementById('cylSelectTanggal');
+            if (selTgl.options.length <= 1) {
+                selTgl.innerHTML = '';
+                for (let i = 1; i <= 31; i++) selTgl.innerHTML += `<option value="${String(i).padStart(2, '0')}">${i}</option>`;
+            }
+            selTgl.value = String(now.getDate()).padStart(2, '0');
+            document.getElementById('cylSelectBulan').value = String(now.getMonth() + 1).padStart(2, '0');
+
+            const selThn = document.getElementById('cylSelectTahun');
+            if (selThn.options.length <= 1) {
+                selThn.innerHTML = '';
+                for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 5; y++) selThn.innerHTML += `<option value="${y}">${y}</option>`;
+            }
+            selThn.value = now.getFullYear();
+        }
+
+        function initCylFilterDropdowns() {
+            const now = new Date();
+            const fTgl = document.getElementById('filterCylTanggal');
+            if (fTgl.options.length <= 1) for (let i = 1; i <= 31; i++) fTgl.innerHTML += `<option value="${String(i).padStart(2, '0')}">${i}</option>`;
+            const fThn = document.getElementById('filterCylTahun');
+            if (fThn.options.length <= 1) for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 5; y++) fThn.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+
+        function resetCylFilterToToday() {
+            document.getElementById('filterCylTanggal').value = "";
+            document.getElementById('filterCylBulan').value = "";
+            document.getElementById('filterCylTahun').value = "";
+            document.getElementById('filterCylCustomer').value = '';
+            document.getElementById('filterCylNamaJob').value = '';
+        }
+
+        function openCylModal() { initCylDateDropdowns(); document.getElementById('cylModal').classList.add('active'); }
+        function closeCylModal() { document.getElementById('cylModal').classList.remove('active'); }
+
+        function confirmCylinder() {
+            const newCyl = {
+                id: 'cyl_' + Date.now(),
+                tgl: document.getElementById('cylSelectTanggal').value,
+                bln: document.getElementById('cylSelectBulan').value,
+                thn: document.getElementById('cylSelectTahun').value,
+                tanggalStr: `${document.getElementById('cylSelectTanggal').value}-${document.getElementById('cylSelectBulan').value}-${document.getElementById('cylSelectTahun').value}`,
+                noSO: document.getElementById('cylNoSO').value.trim() || "-",
+                customer: document.getElementById('cylCustomer').value.trim() || "-",
+                namaJob: document.getElementById('cylNamaJob').value.trim() || "-",
+                panjang: document.getElementById('cylPanjang').value.trim() || "-",
+                cirkum: document.getElementById('cylCirkum').value.trim() || "-",
+                up: document.getElementById('cylUp').value.trim() || "-",
+                pitch: document.getElementById('cylPitch').value.trim() || "-",
+                newbase: document.getElementById('cylNewbase').value.trim() || "-",
+                oldbase: document.getElementById('cylOldbase').value.trim() || "-",
+                cetakan: document.getElementById('cylCetakan').value,
+                cones: document.getElementById('cylCones').value.trim() || "-",
+                catatan: document.getElementById('cylCatatan').value.trim() || "-"
+            };
+            cylinderDataList.unshift(newCyl);
+            saveToFirebase('cylinder_data', cylinderDataList);
+            closeCylModal();
+            renderCylinders();
+        }
+
+        function renderCylinders() {
+            const container = document.getElementById('cylinderListContainer');
+            const fTgl = document.getElementById('filterCylTanggal').value;
+            const fBln = document.getElementById('filterCylBulan').value;
+            const fThn = document.getElementById('filterCylTahun').value;
+            const fCust = document.getElementById('filterCylCustomer').value.toLowerCase().trim();
+            const fJob = document.getElementById('filterCylNamaJob').value.toLowerCase().trim();
+
+            const filtered = cylinderDataList.filter(c => {
+                return (fTgl === "" || c.tgl === fTgl) && (fBln === "" || c.bln === fBln) && (fThn === "" || c.thn === fThn) &&
+                       (fCust === "" || c.customer.toLowerCase().includes(fCust)) && (fJob === "" || c.namaJob.toLowerCase().includes(fJob));
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); padding: 30px;">Tidak ada data cylinder.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.onclick = (e) => { if (!e.target.classList.contains('order-delete-btn')) showCylDetail(c); };
+                card.innerHTML = `
+                    <button class="order-delete-btn" onclick="deleteCylinder(event, '${c.id}')">&times;</button>
+                    <div class="order-card-header"><span>SO: <strong>${c.noSO}</strong> | 🖨️ ${c.cetakan}</span><span>📅 ${c.tanggalStr}</span></div>
+                    <div class="order-main-info"><span>📦 JOB: ${c.namaJob}</span><span>|</span><span>👤 CUST: ${c.customer}</span></div>
+                    <div class="order-card-body">
+                        <div class="order-field-item"><span>P x Cirkum</span>${c.panjang} x ${c.cirkum}</div>
+                        <div class="order-field-item"><span>Up / Pitch</span>${c.up} / ${c.pitch}</div>
+                        <div class="order-field-item"><span>New / Old</span>${c.newbase} / ${c.oldbase}</div>
+                        <div class="order-field-item"><span>Catatan</span>${c.catatan}</div>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function showCylDetail(c) {
+            document.getElementById('detCylTanggal').innerText = c.tanggalStr;
+            document.getElementById('detCylSO').innerText = c.noSO;
+            document.getElementById('detCylCustomer').innerText = c.customer;
+            document.getElementById('detCylNamaJob').innerText = c.namaJob;
+            document.getElementById('detCylPanjang').innerText = c.panjang;
+            document.getElementById('detCylCirkum').innerText = c.cirkum;
+            document.getElementById('detCylUp').innerText = c.up;
+            document.getElementById('detCylPitch').innerText = c.pitch;
+            document.getElementById('detCylNewbase').innerText = c.newbase;
+            document.getElementById('detCylOldbase').innerText = c.oldbase;
+            document.getElementById('detCylCetakan').innerText = c.cetakan;
+            document.getElementById('detCylCones').innerText = c.cones;
+            document.getElementById('detCylCatatan').value = c.catatan;
+
+            document.getElementById('cylJumpToOrder').onclick = () => {
+                closeCylDetailModal();
+                switchPage('orderan');
+                document.getElementById('filterNamaJob').value = c.namaJob;
+                renderOrders();
+            };
+
+            document.getElementById('detCylDeleteBtn').onclick = () => { deleteCylDirect(c.id); closeCylDetailModal(); };
+            document.getElementById('detCylSaveBtn').onclick = () => saveEditedCylinder(c.id);
+            document.getElementById('cylDetailModal').classList.add('active');
+        }
+
+        function saveEditedCylinder(id) {
+            const index = cylinderDataList.findIndex(item => item.id === id);
+            if (index !== -1) {
+                const parts = document.getElementById('detCylTanggal').innerText.trim().split('-');
+                cylinderDataList[index] = {
+                    ...cylinderDataList[index],
+                    tanggalStr: document.getElementById('detCylTanggal').innerText.trim(),
+                    tgl: parts[0] || "01", bln: parts[1] || "01", thn: parts[2] || "2026",
+                    noSO: document.getElementById('detCylSO').innerText.trim(),
+                    customer: document.getElementById('detCylCustomer').innerText.trim(),
+                    namaJob: document.getElementById('detCylNamaJob').innerText.trim(),
+                    panjang: document.getElementById('detCylPanjang').innerText.trim(),
+                    cirkum: document.getElementById('detCylCirkum').innerText.trim(),
+                    up: document.getElementById('detCylUp').innerText.trim(),
+                    pitch: document.getElementById('detCylPitch').innerText.trim(),
+                    newbase: document.getElementById('detCylNewbase').innerText.trim(),
+                    oldbase: document.getElementById('detCylOldbase').innerText.trim(),
+                    cetakan: document.getElementById('detCylCetakan').innerText.trim(),
+                    cones: document.getElementById('detCylCones').innerText.trim(),
+                    catatan: document.getElementById('detCylCatatan').value.trim()
+                };
+                saveToFirebase('cylinder_data', cylinderDataList);
+                renderCylinders();
+            }
+            closeCylDetailModal();
+        }
+
+        function deleteCylinder(e, id) { e.stopPropagation(); deleteCylDirect(id); }
+        function deleteCylDirect(id) {
+            cylinderDataList = cylinderDataList.filter(c => c.id !== id);
+            saveToFirebase('cylinder_data', cylinderDataList);
+            renderCylinders();
+        }
+        function closeCylDetailModal() { document.getElementById('cylDetailModal').classList.remove('active'); }
+
+        // ==================== ORDERAN MASUK & SELESAI ====================
+        function initDateDropdowns() {
+            const now = new Date();
+            const selTgl = document.getElementById('selectTanggal');
+            if (selTgl.options.length <= 1) for (let i = 1; i <= 31; i++) selTgl.innerHTML += `<option value="${String(i).padStart(2, '0')}">${i}</option>`;
+            selTgl.value = String(now.getDate()).padStart(2, '0');
+            document.getElementById('selectBulan').value = String(now.getMonth() + 1).padStart(2, '0');
+            const selThn = document.getElementById('selectTahun');
+            if (selThn.options.length <= 1) for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 5; y++) selThn.innerHTML += `<option value="${y}">${y}</option>`;
+            selThn.value = now.getFullYear();
+        }
+
+        function initFilterDropdowns() {
+            const now = new Date();
+            ['filterTanggal', 'filterOutTanggal'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el.options.length <= 1) for (let i = 1; i <= 31; i++) el.innerHTML += `<option value="${String(i).padStart(2, '0')}">${i}</option>`;
+            });
+            ['filterTahun', 'filterOutTahun'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el.options.length <= 1) for (let y = now.getFullYear() - 1; y <= now.getFullYear() + 5; y++) el.innerHTML += `<option value="${y}">${y}</option>`;
+            });
+        }
+
+        function resetFilterToToday() {
+            ['filterTanggal', 'filterBulan', 'filterTahun', 'filterCustomer', 'filterNamaJob'].forEach(id => document.getElementById(id).value = '');
+        }
+        function resetFilterToTodayCompleted() {
+            ['filterOutTanggal', 'filterOutBulan', 'filterOutTahun', 'filterOutCustomer', 'filterOutNamaJob'].forEach(id => document.getElementById(id).value = '');
+        }
+
+        function openOrderModal() { initDateDropdowns(); document.getElementById('orderModal').classList.add('active'); }
+        function closeOrderModal() { document.getElementById('orderModal').classList.remove('active'); }
+
+        function confirmOrder() {
+            const newOrder = {
+                id: 'ord_' + Date.now(),
+                noPO: document.getElementById('inputNoPO').value.trim() || "-",
+                noSO: document.getElementById('inputNoSO').value.trim() || "-",
+                tgl: document.getElementById('selectTanggal').value,
+                bln: document.getElementById('selectBulan').value,
+                thn: document.getElementById('selectTahun').value,
+                tanggalStr: `${document.getElementById('selectTanggal').value}-${document.getElementById('selectBulan').value}-${document.getElementById('selectTahun').value}`,
+                customer: document.getElementById('inputCustomer').value.trim() || "-",
+                namaJob: document.getElementById('inputNamaJob').value.trim() || "-",
+                ukuran: document.getElementById('inputUkuran').value.trim() || "-",
+                linkJob: document.getElementById('inputLinkJob').value.trim() || "-",
+                catatan: document.getElementById('inputCatatan').value.trim() || "-"
+            };
+            incomingOrdersData.unshift(newOrder);
+            saveToFirebase('incoming_orders', incomingOrdersData);
+            closeOrderModal();
+            renderOrders();
+        }
+
+        function renderOrders() {
+            const container = document.getElementById('orderListContainer');
+            const fTgl = document.getElementById('filterTanggal').value;
+            const fBln = document.getElementById('filterBulan').value;
+            const fThn = document.getElementById('filterTahun').value;
+            const fCust = document.getElementById('filterCustomer').value.toLowerCase().trim();
+            const fJob = document.getElementById('filterNamaJob').value.toLowerCase().trim();
+
+            const filtered = incomingOrdersData.filter(ord => {
+                return (fTgl === "" || ord.tgl === fTgl) && (fBln === "" || ord.bln === fBln) && (fThn === "" || ord.thn === fThn) &&
+                       (fCust === "" || ord.customer.toLowerCase().includes(fCust)) && (fJob === "" || ord.namaJob.toLowerCase().includes(fJob));
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); padding: 30px;">Tidak ada orderan masuk.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(ord => {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.onclick = (e) => { if (!e.target.classList.contains('order-delete-btn') && e.target.tagName !== 'A') showOrderDetail(ord, 'incoming'); };
+                card.innerHTML = `
+                    <button class="order-delete-btn" onclick="deleteOrder(event, '${ord.id}')">&times;</button>
+                    <div class="order-card-header"><span>PO: <strong>${ord.noPO}</strong> | SO: <strong>${ord.noSO}</strong></span><span>📅 ${ord.tanggalStr}</span></div>
+                    <div class="order-main-info"><span>📦 JOB: ${ord.namaJob}</span><span>|</span><span>👤 CUST: ${ord.customer}</span></div>
+                    <div class="order-card-body">
+                        <div class="order-field-item"><span>Ukuran</span>${ord.ukuran}</div>
+                        <div class="order-field-item"><span>Link Job</span>${ord.linkJob !== '-' ? `<a href="${ord.linkJob}" target="_blank" style="color:#ffffff; text-decoration:underline;">🔗 Buka Link</a>` : '-'}</div>
+                        <div class="order-field-item" style="grid-column: span 2;"><span>Catatan</span>${ord.catatan}</div>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function renderCompletedOrders() {
+            const container = document.getElementById('completedOrderListContainer');
+            const fTgl = document.getElementById('filterOutTanggal').value;
+            const fBln = document.getElementById('filterOutBulan').value;
+            const fThn = document.getElementById('filterOutTahun').value;
+            const fCust = document.getElementById('filterOutCustomer').value.toLowerCase().trim();
+            const fJob = document.getElementById('filterOutNamaJob').value.toLowerCase().trim();
+
+            const filtered = completedOrdersData.filter(ord => {
+                return (fTgl === "" || ord.tgl === fTgl) && (fBln === "" || ord.bln === fBln) && (fThn === "" || ord.thn === fThn) &&
+                       (fCust === "" || ord.customer.toLowerCase().includes(fCust)) && (fJob === "" || ord.namaJob.toLowerCase().includes(fJob));
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 12px; font-family: var(--font-mono); padding: 30px;">Tidak ada orderan selesai.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            filtered.forEach(ord => {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.style.borderLeftColor = '#ffffff';
+                card.onclick = (e) => { if (!e.target.classList.contains('order-delete-btn') && e.target.tagName !== 'A') showOrderDetail(ord, 'completed'); };
+                card.innerHTML = `
+                    <button class="order-delete-btn" onclick="deleteCompletedOrder(event, '${ord.id}')">&times;</button>
+                    <div class="order-card-header"><span>PO: <strong>${ord.noPO}</strong> | SO: <strong>${ord.noSO}</strong></span><span>✅ Selesai</span></div>
+                    <div class="order-main-info"><span>📦 JOB: ${ord.namaJob}</span><span>|</span><span>👤 CUST: ${ord.customer}</span></div>
+                    <div class="order-card-body">
+                        <div class="order-field-item"><span>Ukuran</span>${ord.ukuran}</div>
+                        <div class="order-field-item"><span>Link Job</span>${ord.linkJob !== '-' ? `<a href="${ord.linkJob}" target="_blank" style="color:#ffffff; text-decoration:underline;">🔗 Buka Link</a>` : '-'}</div>
+                        <div class="order-field-item" style="grid-column: span 2;"><span>Catatan</span>${ord.catatan}</div>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function showOrderDetail(ord, sourceList = 'incoming') {
+            document.getElementById('detailPO').innerText = ord.noPO;
+            document.getElementById('detailSO').innerText = ord.noSO;
+            document.getElementById('detailTanggal').innerText = ord.tanggalStr;
+            document.getElementById('detailCustomer').innerText = ord.customer;
+            document.getElementById('detailNamaJob').innerText = ord.namaJob;
+            document.getElementById('detailUkuran').innerText = ord.ukuran;
+            document.getElementById('detailLinkJob').innerText = ord.linkJob || "-";
+            document.getElementById('detailCatatan').value = ord.catatan;
+
+            document.getElementById('orderJumpToCyl').onclick = () => {
+                closeDetailModal();
+                switchPage('cylinder');
+                document.getElementById('filterCylNamaJob').value = ord.namaJob;
+                renderCylinders();
+            };
+
+            const btnComplete = document.getElementById('detailCompleteBtn');
+            if (sourceList === 'completed') {
+                btnComplete.innerText = "↩ Kembalikan";
+                btnComplete.onclick = () => { returnOrderToIncoming(ord.id); closeDetailModal(); };
+            } else {
+                btnComplete.innerText = "✓ Selesai";
+                btnComplete.onclick = () => { completeOrderDirect(ord.id); closeDetailModal(); };
+            }
+
+            document.getElementById('detailDeleteBtn').onclick = () => {
+                if (sourceList === 'completed') {
+                    completedOrdersData = completedOrdersData.filter(o => o.id !== ord.id);
+                    saveToFirebase('completed_orders', completedOrdersData);
+                    renderCompletedOrders();
+                } else {
+                    incomingOrdersData = incomingOrdersData.filter(o => o.id !== ord.id);
+                    saveToFirebase('incoming_orders', incomingOrdersData);
+                    renderOrders();
+                }
+                closeDetailModal();
+            };
+
+            document.getElementById('detailSaveBtn').onclick = () => saveEditedOrder(ord.id, sourceList);
+            document.getElementById('orderDetailModal').classList.add('active');
+        }
+
+        function saveEditedOrder(id, sourceList) {
+            const list = sourceList === 'completed' ? completedOrdersData : incomingOrdersData;
+            const index = list.findIndex(o => o.id === id);
+            if (index !== -1) {
+                const parts = document.getElementById('detailTanggal').innerText.trim().split('-');
+                list[index] = {
+                    ...list[index],
+                    noPO: document.getElementById('detailPO').innerText.trim(),
+                    noSO: document.getElementById('detailSO').innerText.trim(),
+                    tanggalStr: document.getElementById('detailTanggal').innerText.trim(),
+                    tgl: parts[0] || "01", bln: parts[1] || "01", thn: parts[2] || "2026",
+                    customer: document.getElementById('detailCustomer').innerText.trim(),
+                    namaJob: document.getElementById('detailNamaJob').innerText.trim(),
+                    ukuran: document.getElementById('detailUkuran').innerText.trim(),
+                    linkJob: document.getElementById('detailLinkJob').innerText.trim(),
+                    catatan: document.getElementById('detailCatatan').value.trim()
+                };
+                saveToFirebase(sourceList === 'completed' ? 'completed_orders' : 'incoming_orders', list);
+                if (sourceList === 'completed') renderCompletedOrders(); else renderOrders();
+            }
+            closeDetailModal();
+        }
+
+        function completeOrderDirect(id) {
+            const index = incomingOrdersData.findIndex(o => o.id === id);
+            if (index !== -1) {
+                const item = incomingOrdersData.splice(index, 1)[0];
+                completedOrdersData.unshift(item);
+                saveToFirebase('incoming_orders', incomingOrdersData);
+                saveToFirebase('completed_orders', completedOrdersData);
+                renderOrders(); renderCompletedOrders();
+            }
+        }
+
+        function returnOrderToIncoming(id) {
+            const index = completedOrdersData.findIndex(o => o.id === id);
+            if (index !== -1) {
+                const item = completedOrdersData.splice(index, 1)[0];
+                incomingOrdersData.unshift(item);
+                saveToFirebase('completed_orders', completedOrdersData);
+                saveToFirebase('incoming_orders', incomingOrdersData);
+                renderCompletedOrders(); renderOrders();
+            }
+        }
+
+        function closeDetailModal() { document.getElementById('orderDetailModal').classList.remove('active'); }
+        function deleteOrder(e, id) { e.stopPropagation(); incomingOrdersData = incomingOrdersData.filter(o => o.id !== id); saveToFirebase('incoming_orders', incomingOrdersData); renderOrders(); }
+        function deleteCompletedOrder(e, id) { e.stopPropagation(); completedOrdersData = completedOrdersData.filter(o => o.id !== id); saveToFirebase('completed_orders', completedOrdersData); renderCompletedOrders(); }
+
+        // ==================== KALENDER ====================
+        let currentCalendarDate = new Date();
+        let selectedDateKey = null;
+
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            document.getElementById('calendarMonthYear').innerText = `${monthNames[month]} ${year}`;
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const gridEl = document.getElementById('calendarDaysGrid');
+            gridEl.innerHTML = '';
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'cal-cell';
+                emptyCell.style.visibility = 'hidden';
+                gridEl.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                const cell = document.createElement('div');
+                cell.className = 'cal-cell';
+                cell.innerText = day;
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                cell.setAttribute('data-date', dateKey);
+
+                if (calendarMemosData[dateKey]?.trim()) cell.classList.add('has-memo');
+                if (selectedDateKey === dateKey) cell.classList.add('selected');
+
+                cell.addEventListener('click', () => selectDate(year, month, day));
+                gridEl.appendChild(cell);
+            }
+
+            if (!selectedDateKey && totalDays > 0) selectDate(year, month, 1);
+        }
+
+        function changeMonth(direction) { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction); renderCalendar(); }
+        
+        function selectDate(year, month, day) {
+            selectedDateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.cal-cell[data-date="${selectedDateKey}"]`)?.classList.add('selected');
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            document.getElementById('selectedDateTitle').innerText = `Memo: ${day} ${monthNames[month]} ${year}`;
+            document.getElementById('calendarMemoText').value = calendarMemosData[selectedDateKey] || '';
+        }
+
+        function saveCurrentMemo() {
+            if (!selectedDateKey) return;
+            const text = document.getElementById('calendarMemoText').value;
+            if (text.trim() === '') delete calendarMemosData[selectedDateKey];
+            else calendarMemosData[selectedDateKey] = text;
+
+            saveToFirebase('calendar_memos', calendarMemosData);
+            const targetCell = document.querySelector(`.cal-cell[data-date="${selectedDateKey}"]`);
+            if (targetCell) {
+                if (text.trim() !== '') targetCell.classList.add('has-memo');
+                else targetCell.classList.remove('has-memo');
+            }
+        }
+
+        function searchMemos() {
+            const query = document.getElementById('memoSearchInput').value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('memoSearchResults');
+            resultsContainer.innerHTML = '';
+            if (query === '') return;
+
+            let found = 0;
+            for (const [dateStr, content] of Object.entries(calendarMemosData)) {
+                if (content.toLowerCase().includes(query)) {
+                    found++;
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.innerHTML = `<strong>${dateStr}</strong>: ${content.substring(0, 35)}...`;
+                    item.onclick = () => jumpToDate(dateStr);
+                    resultsContainer.appendChild(item);
+                }
+            }
+            if (found === 0) resultsContainer.innerHTML = '<div style="padding: 4px; color: var(--text-muted);">Tidak ditemukan.</div>';
+        }
+
+        function jumpToDate(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            currentCalendarDate = new Date(y, m - 1, 1);
+            renderCalendar();
+            selectDate(y, m - 1, d);
+        }
+
+        // ==================== PASTE & OCR ====================
+        pasteZoneNotes.addEventListener('paste', async (e) => {
+            e.preventDefault();
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    zoneStatusNotes.innerText = "Scanning OCR...";
+                    try {
+                        const result = await Tesseract.recognize(URL.createObjectURL(items[i].getAsFile()), 'ind+eng');
+                        zoneStatusNotes.innerText = "Success!";
+                        processTextNotes(result.data.text);
+                    } catch { zoneStatusNotes.innerText = "OCR Failed"; createNewNotesSticky("Gagal Membaca Gambar", "-"); }
+                    return;
+                } else if (items[i].type === 'text/plain') {
+                    items[i].getAsString((text) => { zoneStatusNotes.innerText = "Success!"; processTextNotes(text); });
+                    return;
+                }
+            }
+            zoneStatusNotes.innerText = "Invalid format!";
+        });
+
+        function processTextNotes(text) {
+            const lines = text.split('\n');
+            const match = text.match(/\d{8,15}/g);
+            let contact = match ? match[0] : "-";
+            for (let line of lines) {
+                if (["pak", "bu", "bapak", "ibu"].some(kw => line.toLowerCase().includes(kw))) { contact = line.trim(); break; }
+            }
+            let item = lines[0]?.substring(0, 30) || "-";
+            createNewNotesSticky(item, contact);
+            zoneStatusNotes.innerText = "";
+            pasteZoneNotes.focus();
+        }
+
+        // ==================== IMPORT & EXPORT JSON ====================
+        function exportDatabaseJSON() {
+            const allData = {
+                notes_page: notesDataList,
+                cylinder_data: cylinderDataList,
+                incoming_orders: incomingOrdersData,
+                completed_orders: completedOrdersData,
+                calendar_memos: calendarMemosData
+            };
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `backup_dashboard_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importDatabaseJSON() {
+            const fileInput = document.getElementById('importFileJSON');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Pilih file JSON terlebih dahulu!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (window.db) {
+                        const { ref, set } = window.dbRef;
+                        set(ref(window.db, 'notes_page'), importedData.notes_page || null);
+                        set(ref(window.db, 'cylinder_data'), importedData.cylinder_data || null);
+                        set(ref(window.db, 'incoming_orders'), importedData.incoming_orders || null);
+                        set(ref(window.db, 'completed_orders'), importedData.completed_orders || null);
+                        set(ref(window.db, 'calendar_memos'), importedData.calendar_memos || null);
+                        alert("Data berhasil di-import dan disinkronkan ke Firebase!");
+                    }
+                } catch (err) {
+                    alert("Gagal membaca file JSON. Format file tidak valid.");
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
