@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -859,6 +858,7 @@
         let cylinderDataList = [];
         let calendarMemosData = {};
         let notesDataList = [];
+        let syncTimeout = null;
 
         window.addEventListener('firebase-ready', () => {
             initFirebaseRealtimeSync();
@@ -975,7 +975,7 @@
 
             document.getElementById('page-notes').appendChild(noteDiv);
             setupDraggableAndEventsNotes(noteDiv, id);
-            if (saveToCloud) syncNotesToCloud();
+            if (saveToCloud) syncNotesToCloud(true);
             return noteDiv;
         }
 
@@ -983,7 +983,7 @@
             const noteDiv = document.getElementById(id);
             if (!noteDiv) return;
             noteDiv.style.backgroundColor = (hexColor === '#141414' || noteDiv.style.backgroundColor === hexColor) ? '' : hexColor;
-            syncNotesToCloud();
+            syncNotesToCloud(true);
         }
 
         function setupDraggableAndEventsNotes(noteDiv, id) {
@@ -997,6 +997,12 @@
                 e.stopPropagation();
             });
 
+            // Klik 2x pada header untuk melipat / menutup catatan (collapse/expand)
+            header.addEventListener('dblclick', (e) => {
+                noteDiv.classList.toggle('collapsed');
+                e.stopPropagation();
+            });
+
             document.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
                 const parentRect = document.getElementById('page-notes').getBoundingClientRect();
@@ -1005,7 +1011,7 @@
             });
 
             document.addEventListener('mouseup', () => {
-                if (isDragging) { isDragging = false; syncNotesToCloud(); }
+                if (isDragging) { isDragging = false; syncNotesToCloud(true); }
             });
 
             const itemBox = document.getElementById(`item_${id}`);
@@ -1013,9 +1019,9 @@
             const noteTextArea = document.getElementById(`noteText_${id}`);
             const titleSpan = document.getElementById(`title_${id}`);
 
-            itemBox.addEventListener('input', () => { titleSpan.innerText = itemBox.innerText || "-"; syncNotesToCloud(); });
-            contactBox.addEventListener('input', () => syncNotesToCloud());
-            noteTextArea.addEventListener('input', () => syncNotesToCloud());
+            itemBox.addEventListener('input', () => { titleSpan.innerText = itemBox.innerText || "-"; syncNotesToCloud(false); });
+            contactBox.addEventListener('input', () => syncNotesToCloud(false));
+            noteTextArea.addEventListener('input', () => syncNotesToCloud(false));
 
             noteDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('close-btn') || e.target.classList.contains('color-dot')) return;
@@ -1027,24 +1033,34 @@
             e.stopPropagation();
             const note = document.getElementById(id);
             if (note) note.remove();
-            syncNotesToCloud();
+            syncNotesToCloud(true);
         }
 
-        function syncNotesToCloud() {
-            const notesList = document.querySelectorAll('#page-notes .sticky-note-harga');
-            const notesData = [];
-            notesList.forEach(note => {
-                const id = note.id;
-                notesData.push({
-                    itemName: document.getElementById(`item_${id}`)?.innerText || "-",
-                    contactText: document.getElementById(`contact_${id}`)?.innerText || "-",
-                    noteText: document.getElementById(`noteText_${id}`)?.value || "",
-                    left: note.style.left,
-                    top: note.style.top,
-                    bgColor: note.style.backgroundColor || ""
+        function syncNotesToCloud(immediate = false) {
+            const executeSync = () => {
+                const notesList = document.querySelectorAll('#page-notes .sticky-note-harga');
+                const notesData = [];
+                notesList.forEach(note => {
+                    const id = note.id;
+                    notesData.push({
+                        itemName: document.getElementById(`item_${id}`)?.innerText || "-",
+                        contactText: document.getElementById(`contact_${id}`)?.innerText || "-",
+                        noteText: document.getElementById(`noteText_${id}`)?.value || "",
+                        left: note.style.left,
+                        top: note.style.top,
+                        bgColor: note.style.backgroundColor || ""
+                    });
                 });
-            });
-            saveToFirebase('notes_page', notesData);
+                saveToFirebase('notes_page', notesData);
+            };
+
+            if (immediate) {
+                if (syncTimeout) clearTimeout(syncTimeout);
+                executeSync();
+            } else {
+                if (syncTimeout) clearTimeout(syncTimeout);
+                syncTimeout = setTimeout(executeSync, 600);
+            }
         }
 
         // ==================== CYLINDER ====================
